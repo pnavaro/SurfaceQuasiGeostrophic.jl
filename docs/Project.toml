@@ -1,0 +1,3 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+SurfaceQuasiGeostrophic = "a4e05644-f997-4373-a859-65faaffe8e7e"
