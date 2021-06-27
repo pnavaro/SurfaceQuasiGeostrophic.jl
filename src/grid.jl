@@ -68,6 +68,5 @@ struct Grid
 
     end
         
-
 end
 
