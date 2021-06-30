@@ -1,24 +1,29 @@
-function compute_dt(model, w)
+"""
+    compute_dt( model, ogird, w)
+CFL of the (large-scale) advection
+"""
+function compute_dt( model, grid, w)
 
-# CFL of the (large-scale) advection
+dx = grid.dx
+dy = grid.dy
 
-dX=model.grid.dX;
-bound1=sum(abs(w)*pi/dX(1),3);
-bound1=max(bound1(:));
-bound1=1/bound1/4;
+bound1 = sum( abs(w) * pi / dx, 3)
+bound1 = maximum(bound1)
+bound1 = 1 / bound1 / 4
+
 # CFL of the hyperviscosity
 
-dX2=(model.grid.dX /pi).^2;
-bound2=1/model.advection.HV.val*(prod(dX2)/sum(dX2))^(model.advection.HV.order/2);
+dx2 = ([dx, dy] ./ pi).^2
+bound2 = 1 / model.hv_val * (prod(dx2)/sum(dX2))^(model.hv_order/2)
 
 # Minimum of the CFL
-dt = min([bound1 bound2]); 
-clear  bound1 bound2 dX dX2
+minimum([bound1; bound2])
 
 end
 
-
 """
+    compute_hyper_coef( model, grid, w )
+
 compute hyperviscosity coefficient 
 """
 function compute_hyper_coef( model, grid, w )
