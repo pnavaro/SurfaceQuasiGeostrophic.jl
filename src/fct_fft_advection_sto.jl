@@ -29,16 +29,26 @@ compute hyperviscosity coefficient
 function compute_hyper_coef( model, grid, w )
 
 # compute gradient of w using 'gradient' matlab function
-dxUx,dyUx = gradient(w(:,:,1)',grid.x_ref,grid.y_ref)
-dxUy,dyUy = gradient(w(:,:,2)',grid.x_ref,grid.y_ref)
-s=(dxUx+dyUy)/2
-d=(dyUx+dxUy)/2
-lambda = sqrt(s.^2+d.^2);
-model.advection.lambda_RMS = sqrt(mean(lambda(:).^2));
+
+# dxUx,dyUx = gradient(w(:,:,1)',grid.x_ref,grid.y_ref)
+# dxUy,dyUy = gradient(w(:,:,2)',grid.x_ref,grid.y_ref)
+
+kx = grid.kx
+ky = grid.ky
+dxUx=real(ifft(1im .* kx .* fft(w[1])))
+dyUx=real(ifft(1im .* ky .* fft(w[1])))
+dxUy=real(ifft(1im .* kx .* fft(w[2])))
+dyUy=real(ifft(1im .* ky .* fft(w[2])))
+
+
+s = (dxUx .+ dyUy) ./ 2
+d = (dyUx .+ dxUy) ./ 2
+lambda = sqrt.(s.^2+d.^2)
+model.lambda_rms = sqrt(mean(lambda.^2))
 
 # Hyperviscosity coefficient
-coef = 40 * sqrt(mean(lambda(:).^2)) * ...
-    (mean(model.grid.dX)/pi)^model.advection.HV.order;
+coef = 40 * model/lambda_rms * (0.5 * (grid.dx + grid.dy)/pi)^model.hv_order
+
     return coef
 
 end
@@ -51,7 +61,7 @@ model = init_grid_k(model)
 
 ## Initialisation of the spatial fields
 fft_w = sqg_large_uq(model, fft_buoy_part)
-w = real(ifft2(fft_w))
+w = real(ifft(fft_w))
 
 ## Hyperviscosity [order & coefficient]
 model.hv_order = 8
@@ -60,7 +70,7 @@ model.hv_val = compute_hyper_coef(model, w)
 ## Choice of time step : CFL
 model.dt_adv  = compute_dt(model, w)
 
-N_t = model.advection.advection_duration/model.advection.dt_adv); #nb iterations
+N_t = model.advection.advection_duration/model.advection.dt_adv
 
 # Printing some information
 println("Time step: $(model.dt_adv) seconds")
@@ -80,6 +90,6 @@ tt = floor(Int, Nt*model.dt_adv/(3600*24)) # Number of days
 println("$(t*model.dt_adv/(24*3600)) days of advection ")
 day = trunc( Int64, t * model.dt_adv/24/3600)
 
-fft_buoy_part
+return fft_buoy_part
 
 end
