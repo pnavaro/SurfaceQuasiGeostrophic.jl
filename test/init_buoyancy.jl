@@ -1,14 +1,4 @@
-using SurfaceQuasiGeostrophic
-using Test
-using Plots
-
-include("init_grid.jl")
-include("init_buoyancy.jl")
-
-@testset "Advection" begin
-
-# Duration of the simulation [in seconds]
-advection_duration = 3600*24*20; # 20 days
+@testset "Init Buoyancy" begin
 
 # Resolution [even integer]
 nx, ny  = 64, 64
@@ -29,9 +19,8 @@ model = (
 # Initial condition for the buoyancy
 fft_buoy = fct_buoyancy_init(model, grid)
 
-# Advection
-
-# fct_fft_advection_sto!(model, fft_buoy)
+contourf(fft_buoy)
+savefig("fft_buoy.png")
 
 @test true
 
