@@ -46,8 +46,33 @@ struct Grid
         dx = lx / nx
         dy = ly / ny
 
-        kx = Float64[ 0:px-1; 0; 1-py:-1] 
-        ky = Float64[ 0:py-1; 0; 1-py:-1]
+        kx = zeros(nx ÷ 2 + 1, ny)
+        ky = zeros(ny ÷ 2 + 1, ny)
+        k2 = zeros(nx ÷ 2 + 1, ny)
+
+        kx0 = 2π / lx
+        ky0 = 2π / ly
+
+        for ik = 1:nx÷2+1
+            kx1 = (ik - 1) * kx0
+            for jk = 1:ny÷2
+                kx[ik, jk] = kx1
+                ky[ik, jk] = (jk - 1) * ky0
+            end
+            for jk = ny÷2+1:ny
+                kx[ik, jk] = kx1
+                ky[ik, jk] = (jk - 1 - ny) * ky0
+            end
+        end
+
+        kx[1, 1] = 1.0
+        k2 .= kx .* kx .+ ky .* ky
+        kx .= kx ./ k2
+        ky .= ky ./ k2
+
+
+        kx = Float64[ 0:px-1; -px:-1] 
+        ky = Float64[ 0:py-1; -py:-1]
 
         if meth_anti_alias == :deriv_LowPass
             kx .*= fct_unity_approx5(nx)

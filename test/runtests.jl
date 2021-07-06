@@ -3,6 +3,7 @@ using Test
 using Plots
 
 include("init_grid.jl")
+include("test_poisson.jl")
 include("init_buoyancy.jl")
 
 @testset "Advection" begin

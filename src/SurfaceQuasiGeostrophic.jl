@@ -3,6 +3,7 @@ module SurfaceQuasiGeostrophic
 using FFTW
 
 include("grid.jl")
+include("poisson.jl")
 include("fct_buoyancy_init.jl")
 include("sqg_large_uq.jl")
 include("deriv_fft_advection.jl")
