@@ -20,4 +20,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/pnavaro/SurfaceQuasiGeostrophic.jl",
+    devbranch = "main"
 )
