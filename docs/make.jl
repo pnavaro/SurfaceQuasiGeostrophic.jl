@@ -1,5 +1,8 @@
 using SurfaceQuasiGeostrophic
 using Documenter
+using Plots
+
+ENV["GKSwstype"] = "100"
 
 DocMeta.setdocmeta!(SurfaceQuasiGeostrophic, :DocTestSetup, :(using SurfaceQuasiGeostrophic); recursive=true)
 
@@ -15,10 +18,12 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Buoyancy" => "buoyancy.md"
     ],
 )
 
 deploydocs(;
+    branch = "gh-pages",
     repo="github.com/pnavaro/SurfaceQuasiGeostrophic.jl",
     devbranch = "main"
 )
