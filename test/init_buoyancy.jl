@@ -17,10 +17,10 @@ model = (
 )
 
 # Initial condition for the buoyancy
-fft_buoy = fct_buoyancy_init(model, grid)
+buoyancy = init_buoyancy(model, grid)
 
-contourf(fft_buoy)
-savefig("fft_buoy.png")
+contourf(real(buoyancy))
+savefig("buoyncy.png")
 
 @test true
 

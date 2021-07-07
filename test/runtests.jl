@@ -28,7 +28,7 @@ model = (
 )
 
 # Initial condition for the buoyancy
-fft_buoy = fct_buoyancy_init(model, grid)
+buoyancy = init_buoyancy(model, grid)
 
 # Advection
 
