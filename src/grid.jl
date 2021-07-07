@@ -36,7 +36,7 @@ struct Grid
     y::Vector{Float64}
     kx::Vector{Float64}
     ky::Vector{Float64}
-    k2::Array{Float64,2}
+    k::Array{Float64,2}
 
     function Grid(lx, nx, ly, ny; meth_anti_alias = :deriv_LowPass)
 
@@ -58,13 +58,13 @@ struct Grid
         ky .*= 2π / ly
 
         k2 = kx .^ 2 .+ transpose(ky) .^ 2
-        k2[px+1, :] .= 0
-        k2[:, py+1] .= 0
+
+        k2[ k2 .== 0] .= 1
 
         x = LinRange(0, lx, nx + 1)[1:end-1]
         y = LinRange(0, ly, ny + 1)[1:end-1]
 
-        new(nx, ny, lx, ly, dx, dy, x, y, kx, ky, k2)
+        new(nx, ny, lx, ly, dx, dy, x, y, kx, ky, sqrt.(k2))
 
     end
 

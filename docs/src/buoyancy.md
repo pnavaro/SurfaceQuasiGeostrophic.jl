@@ -1,5 +1,8 @@
 # Buoyancy
 
+
+## Intialize the buoyancy with 4 vortices
+
 ```@example 1
 using SurfaceQuasiGeostrophic, Plots
 
@@ -10,16 +13,24 @@ f0 = 2 * omega * sin( angle_grid )
 
 grid = Grid( 1e6, nx, 1e6, ny )
 
-# Gather parameters in the structure model
-model = ( 
-    rho=1e3, # Background density
-    g = 9.81, # Gravity
-    buoyancy_freq_N = 3 * f0, # Background stratification
-    odg_b = 1e-3 # Amplitude of the buoyancy
-)
+sqg = SQG( grid, f0 ) 
 
-# Initial condition for the buoyancy
-buoyancy = init_buoyancy(model, grid)
+init_buoyancy!(sqg)
 
-contourf(real(buoyancy))
+contourf(sqg.b)
+```
+
+## Compute velocities by using the Surface Quasi-Geostrophic (SQG) model
+
+
+```@example 1
+
+update_velocities!( sqg )
+
+p = plot(layout(1,2))
+
+contourf!(p[1,1], sqg.u_x)
+contourf!(p[1,2], sqg.u_y)
+display(p)
+
 ```

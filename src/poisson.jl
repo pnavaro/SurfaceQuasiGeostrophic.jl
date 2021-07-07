@@ -3,7 +3,7 @@ using FFTW
 export Poisson
 
 """
-    TwoDPoissonPeriodic
+    Poisson( grid )
 
 Derived type to solve the Poisson equation on 2d regular 
 cartesian mesh with periodic boundary conditions on both sides
@@ -62,51 +62,53 @@ struct Poisson
 end
 
 
-export solve!
+export compute_psi!
 
 """
-    solve!( poisson, phi, rho )
+    compute_psi!( poisson, psi, omega )
 
-computes `phi` from `rho` 
+computes ``\\psi`` from ``\\omega``
 
 ```math
--\\Delta phi(x,y) = rho(x,y)
+-\\Delta \\psi(x,y) = \\omega(x,y)
 ```
 
 """
-function solve!(phi, poisson::Poisson, rho)
+function compute_psi!(psi, poisson::Poisson, omega)
 
-    poisson.rht .= rfft(rho)
+    poisson.rht .= rfft(omega)
     poisson.rht ./= poisson.k2
-    phi .= irfft(poisson.rht, poisson.grid.nx)
+    psi .= irfft(poisson.rht, poisson.grid.nx)
 
 end
 
-"""
-    solve!( ex, ey, poisson, rho )
+export compute_velocities!
 
-solves Poisson equation to compute electric fields
+"""
+    compute_velocities!( ux, uy, poisson, omega )
+
+solves Poisson equation to compute velocity fields
 
 ```math
-E(x,y) = -\\nabla \\phi(x,y) \\\\
--\\Delta \\phi(x,y) = \\rho(x,y)
+\\Delta \\psi(x,y) = - \\omega(x,y) \\\\
+u(x,y) = \\nabla \\times \\psi(x,y) 
 ```
 
 """
-function solve!(ex, ey, poisson::Poisson, rho)
+function compute_velocities!(ux, uy, poisson::Poisson, omega)
 
-    poisson.rht .= rfft(rho)
-
-    poisson.rht[1, 1] = 0.0
-    poisson.rht .*= -1im .* poisson.kx
-
-    ex .= irfft(poisson.rht, poisson.grid.nx)
-
-    poisson.rht .= rfft(rho)
+    poisson.rht .= rfft(omega)
 
     poisson.rht[1, 1] = 0.0
     poisson.rht .*= -1im .* poisson.ky
 
-    ey .= irfft(poisson.rht, poisson.grid.nx)
+    ux .= irfft(poisson.rht, poisson.grid.nx)
+
+    poisson.rht .= rfft(omega)
+
+    poisson.rht[1, 1] = 0.0
+    poisson.rht .*= 1im .* poisson.kx
+
+    uy .= irfft(poisson.rht, poisson.grid.nx)
 
 end
