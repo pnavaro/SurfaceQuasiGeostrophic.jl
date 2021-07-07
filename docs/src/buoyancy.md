@@ -1,6 +1,6 @@
 # Buoyancy
 
-```@buoyancy
+```@example 1
 using SurfaceQuasiGeostrophic, Plots
 
 nx, ny  = 64, 64
