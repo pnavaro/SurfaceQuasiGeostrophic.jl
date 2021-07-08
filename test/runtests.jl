@@ -2,6 +2,9 @@ using SurfaceQuasiGeostrophic
 using Test
 using FFTW
 using Plots
+using ProgressMeter
+
+ENV["GKSwstype"] = "100"
 
 include("init_grid.jl")
 include("test_poisson.jl")
@@ -32,6 +35,17 @@ init_buoyancy!(sqg)
 ## Initialisation of the spatial fields
 
 update_velocities!( sqg)
+contourf(sqg.u_x)
+savefig("u_x.png")
+contourf(sqg.u_y)
+savefig("u_y.png")
+contourf(irfft(sqg.ψ̂, nx))
+savefig("stream_function.png")
+
+update_advection_term!( sqg )
+
+contourf(irfft(sqg.â, nx))
+savefig("advection_term.png")
 
 ## Hyperviscosity [order & coefficient]
 @show sqg.hv_order = 8
@@ -47,61 +61,14 @@ nstep = advection_duration ÷ dt
 # Printing some information
 println("Final time: $(nstep*dt÷(3600*24)) days ")
 
+rk4 = TimeSolver(nx, ny)
 
-function update_advection_term!(sqg)
-
-    update_velocities!( sqg )
-
-    # Grid of wave vectors
-
-    px = sqg.grid.nx ÷ 2 # frequency of aliasing
-    py = sqg.grid.ny ÷ 2 # frequency of aliasing
-
-    # Advection term
-
-    sqg.adv .=  sqg.u_x .* ifft(-1im .* sqg.grid.kx  .* sqg.b̂) 
-    sqg.adv .+= sqg.u_y .* ifft(-1im .* sqg.grid.ky' .* sqg.b̂)
-
-    fft!(sqg.adv)
-    sqg.adv[px+1, :] .= 0 # Remove aliasing
-    sqg.adv[:, py+1] .= 0 # Remove aliasing
-
-    # Summing Hyperviscosity term
-
-    sqg.adv .+= - sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
-
+@showprogress 1000 for i = 1:nstep
+    step!( sqg, rk4, dt )
 end
 
-nstep = 10
-
-for istep = 1:nstep
-
-    b̂_old = sqg.b̂
-    db̂ = zero(sqg.b̂)
-
-    update_advection_term!(sqg)
-
-    sqg.b̂ .= b̂_old .+ sqg.adv .* dt / 2
-    db̂ .+= sqg.adv ./ 2
-
-    update_advection_term!(sqg)
-
-    sqg.b̂ .= b̂_old .+ sqg.adv * dt / 2
-    db̂ .+= sqg.adv
-
-    update_advection_term!(sqg)
-
-    sqg.b̂ .= b̂_old .+ sqg.adv * dt 
-    db̂ .+= sqg.adv
-
-    update_advection_term!(sqg)
-
-    db̂ .+= sqg.adv ./ 2
-
-    sqg.b̂ .= b̂_old .+ dt / 3 .* db̂
-
-end
-
+contourf(irfft(sqg.b̂, nx))
+savefig("buoyancy.png")
 
 @test true
 
