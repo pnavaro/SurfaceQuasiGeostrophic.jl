@@ -27,7 +27,7 @@ contourf(sqg.b)
 
 update_velocities!( sqg )
 
-p = plot(layout(1,2))
+p = plot(layout=(1,2))
 
 contourf!(p[1,1], sqg.u_x)
 contourf!(p[1,2], sqg.u_y)
