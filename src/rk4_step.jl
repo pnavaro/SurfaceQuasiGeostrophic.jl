@@ -1,54 +1,80 @@
+export update_advection_term!
+
 """
-    deriv_fft_advection(model, b̂, w)
+    update_advection_term(model)
 
 Compute the Fourier transform of the partial derivative
 of the advection term plus the hyperviscosity term
 
 """
-function deriv_fft_advection(model, grid, b̂, w)
+function update_advection_term!(sqg)
 
+    nx = sqg.grid.nx
 
-    # Grid of wave vectors
-    px = grid.nx ÷ 2 # frequency of aliasing
-    py = grid.ny ÷ 2 # frequency of aliasing
-    kx = grid.kx
-    ky = grid.ky
-    k2 = grid.k2
+    update_velocities!( sqg )
 
     # Advection term
 
+    sqg.a .=  sqg.u_x .* irfft(-1im .* sqg.grid.kx .* sqg.b̂, nx)
+    sqg.a .+= sqg.u_y .* irfft(-1im .* sqg.grid.ky .* sqg.b̂, nx)
 
-    adv = zeros(ComplexF64, grid.nx, grid.ny)
-    adv .= w .* (ifft(-1im .* kx  .* b̂) .+ ifft(-1im .* ky' .* b̂))
-
-    fft!(adv)
-    adv[px+1, :] .= 0 # Remove aliasing
-    adv[:, py+1] .= 0 # Remove aliasing
+    sqg.â .= rfft(sqg.a)
 
     # Summing Hyperviscosity term
 
-    adv .+= - model.hv_val .* k2 .^ (model.hv_order÷2) .* b̂
-
-    return adv
+    sqg.â .-= sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
 
 end
 
+export TimeSolver
+
+struct TimeSolver
+
+    b̂ :: Array{ComplexF64, 2}
+    db̂ :: Array{ComplexF64, 2}
+
+    function TimeSolver( nx, ny)
+
+        b̂ = zeros(ComplexF64, nx÷2+1, ny)
+        db̂ = zeros(ComplexF64, nx÷2+1, ny)
+
+        new( b̂, db̂ )
+
+    end
+
+end
+
+export step!
 
 """
-    rk4(model, fft_b, w)
+    step!(model, time_solver, dt)
 
 Time integration of the advection equation of b 
-by 4th order Runge-Kutta method with the speed w
+by 4th order Runge-Kutta method
 """
-function rk4_step!(b̂, model, ux, uy)
+function step!( sqg :: SQG, rk4 :: TimeSolver, dt )
 
-    dt = model.dt
+    rk4.b̂ .= sqg.b̂
 
-    k1 = deriv_fft_advection(model, grid, fft_b, w)
-    k2 = deriv_fft_advection(model, grid, fft_b + k1 * dt / 2, w)
-    k3 = deriv_fft_advection(model, grid, fft_b + k2 * dt / 2, w)
-    k4 = deriv_fft_advection(model, grid, fft_b + k3 * dt, w)
+    update_advection_term!(sqg)
 
-    fft_b .+= dt / 3 .* (k1 ./ 2 .+ k2 .+ k3 .+ k4 ./ 2)
+    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt / 2
+    rk4.db̂ .= sqg.â ./ 2
+
+    update_advection_term!(sqg)
+
+    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt / 2
+    rk4.db̂ .+= sqg.â
+
+    update_advection_term!(sqg)
+
+    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt 
+    rk4.db̂ .+= sqg.â
+
+    update_advection_term!(sqg)
+
+    rk4.db̂ .+= sqg.â ./ 2
+
+    sqg.b̂ .= rk4.b̂ .+ dt / 3 .* rk4.db̂
 
 end

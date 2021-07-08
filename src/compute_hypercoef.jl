@@ -14,10 +14,12 @@ function compute_hypercoef(model)
     # dxUx,dyUx = gradient(w(:,:,1)',grid.x_ref,grid.y_ref)
     # dxUy,dyUy = gradient(w(:,:,2)',grid.x_ref,grid.y_ref)
 
-    dxUx = real(ifft(1im .* model.grid.kx .* model.û_x))
-    dyUx = real(ifft(1im .* model.grid.ky' .* model.û_x))
-    dxUy = real(ifft(1im .* model.grid.kx .* model.û_y))
-    dyUy = real(ifft(1im .* model.grid.ky' .* model.û_y))
+    nx, ny = model.grid.nx, model.grid.ny
+
+    dxUx = irfft(1im .* model.grid.kx .* model.û_x, nx)
+    dyUx = irfft(1im .* model.grid.ky .* model.û_x, nx)
+    dxUy = irfft(1im .* model.grid.kx .* model.û_y, nx)
+    dyUy = irfft(1im .* model.grid.ky .* model.û_y, nx)
 
     s = (dxUx .+ dyUy) ./ 2
     d = (dyUx .+ dxUy) ./ 2

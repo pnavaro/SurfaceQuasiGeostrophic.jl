@@ -42,7 +42,7 @@ function init_buoyancy!(model :: SQG)
     @. model.b *= model.odg_b
 
     # Initialize the Fourier transform of the buyoancy
-    model.b̂ .= fft(model.b)
+    model.b̂ .= rfft(model.b)
 
 
 end
