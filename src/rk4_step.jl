@@ -1,80 +1,54 @@
-export update_advection_term!
-
 """
-    update_advection_term(model)
+    deriv_fft_advection(model, b̂, w)
 
 Compute the Fourier transform of the partial derivative
 of the advection term plus the hyperviscosity term
 
 """
-function update_advection_term!(sqg)
+function deriv_fft_advection(model, grid, b̂, w)
 
-    nx = sqg.grid.nx
 
-    update_velocities!( sqg )
+    # Grid of wave vectors
+    px = grid.nx ÷ 2 # frequency of aliasing
+    py = grid.ny ÷ 2 # frequency of aliasing
+    kx = grid.kx
+    ky = grid.ky
+    k2 = grid.k2
 
     # Advection term
 
-    sqg.a .=  sqg.u_x .* irfft(-1im .* sqg.grid.kx .* sqg.b̂, nx)
-    sqg.a .+= sqg.u_y .* irfft(-1im .* sqg.grid.ky .* sqg.b̂, nx)
 
-    sqg.â .= rfft(sqg.a)
+    adv = zeros(ComplexF64, grid.nx, grid.ny)
+    adv .= w .* (ifft(-1im .* kx  .* b̂) .+ ifft(-1im .* ky' .* b̂))
+
+    fft!(adv)
+    adv[px+1, :] .= 0 # Remove aliasing
+    adv[:, py+1] .= 0 # Remove aliasing
 
     # Summing Hyperviscosity term
 
-    sqg.â .-= sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
+    adv .+= - model.hv_val .* k2 .^ (model.hv_order÷2) .* b̂
+
+    return adv
 
 end
 
-export TimeSolver
-
-struct TimeSolver
-
-    b̂ :: Array{ComplexF64, 2}
-    db̂ :: Array{ComplexF64, 2}
-
-    function TimeSolver( nx, ny)
-
-        b̂ = zeros(ComplexF64, nx÷2+1, ny)
-        db̂ = zeros(ComplexF64, nx÷2+1, ny)
-
-        new( b̂, db̂ )
-
-    end
-
-end
-
-export step!
 
 """
-    step!(model, time_solver, dt)
+    rk4(model, fft_b, w)
 
 Time integration of the advection equation of b 
-by 4th order Runge-Kutta method
+by 4th order Runge-Kutta method with the speed w
 """
-function step!( sqg :: SQG, rk4 :: TimeSolver, dt )
+function rk4_step!(b̂, model, ux, uy)
 
-    rk4.b̂ .= sqg.b̂
+    dt = model.dt
 
-    update_advection_term!(sqg)
+    k1 = deriv_fft_advection(model, grid, fft_b, w)
+    k2 = deriv_fft_advection(model, grid, fft_b + k1 * dt / 2, w)
+    k3 = deriv_fft_advection(model, grid, fft_b + k2 * dt / 2, w)
+    k4 = deriv_fft_advection(model, grid, fft_b + k3 * dt, w)
 
-    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt / 2
-    rk4.db̂ .= sqg.â ./ 2
-
-    update_advection_term!(sqg)
-
-    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt / 2
-    rk4.db̂ .+= sqg.â
-
-    update_advection_term!(sqg)
-
-    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt 
-    rk4.db̂ .+= sqg.â
-
-    update_advection_term!(sqg)
-
-    rk4.db̂ .+= sqg.â ./ 2
-
-    sqg.b̂ .= rk4.b̂ .+ dt / 3 .* rk4.db̂
+    fft_b .+= dt / 3 .* (k1 ./ 2 .+ k2 .+ k3 .+ k4 ./ 2)
 
 end
