@@ -14,6 +14,7 @@ include("init_buoyancy.jl")
 
 # Duration of the simulation [in seconds]
 advection_duration = 3600*24*20; # 20 days
+advection_duration = 3600*24*2; # 2 days
 
 # Resolution [even integer]
 nx, ny  = 64, 64
@@ -63,7 +64,7 @@ println("Final time: $(nstep*dt÷(3600*24)) days ")
 
 rk4 = TimeSolver(nx, ny)
 
-@showprogress 1000 for i = 1:nstep
+@showprogress 1 for i = 1:nstep
     step!( sqg, rk4, dt )
 end
 

@@ -16,10 +16,12 @@ function compute_hypercoef(model)
 
     nx, ny = model.grid.nx, model.grid.ny
 
-    dxUx = irfft(1im .* model.grid.kx .* model.û_x, nx)
-    dyUx = irfft(1im .* model.grid.ky .* model.û_x, nx)
-    dxUy = irfft(1im .* model.grid.kx .* model.û_y, nx)
-    dyUy = irfft(1im .* model.grid.ky .* model.û_y, nx)
+    update_velocities!(model)
+
+    dxUx = irfft(1im .* model.kx .* model.û_x, nx)
+    dyUx = irfft(1im .* model.ky' .* model.û_x, nx)
+    dxUy = irfft(1im .* model.kx .* model.û_y, nx)
+    dyUy = irfft(1im .* model.ky' .* model.û_y, nx)
 
     s = (dxUx .+ dyUy) ./ 2
     d = (dyUx .+ dxUy) ./ 2

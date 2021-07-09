@@ -34,6 +34,9 @@ mutable struct SQG
     a :: Array{Float64, 2}
     â :: Array{ComplexF64, 2}
 
+    kx :: Vector{Float64}
+    ky :: Vector{Float64}
+
     function SQG( grid, f0 )
 
         rho=1e3
@@ -58,8 +61,14 @@ mutable struct SQG
         a = zeros(Float64, nx, ny)
         â = zeros(ComplexF64, nx÷2+1, ny)
 
+        kx = 2π / grid.lx .* collect(0:nx÷2)
+        ky = 2π / grid.ly .* [0:ny÷2-1;-ny÷2:-1]
+
+        kx .*= (abs.(kx) .< nx/3)
+        ky .*= (abs.(ky) .< ny/3)
+
         new( grid, rho, g, buoyancy_freq_n, odg_b, hv_order, hv_val,
-             b, ψ, b̂, ψ̂, u_x, u_y, û_x, û_y, a, â)
+             b, ψ, b̂, ψ̂, u_x, u_y, û_x, û_y, a, â, kx, ky)
 
     end
 
@@ -81,10 +90,92 @@ function update_velocities!( sqg :: SQG )
     sqg.b  = irfft(sqg.b̂, nx)
     sqg.ψ̂ .= sqg.b̂ .* sqg.grid.on_k ./ sqg.buoyancy_freq_n
     
-    sqg.û_x .= - 1im .* sqg.grid.ky .* sqg.ψ̂
-    sqg.û_y	.=  1im .* sqg.grid.kx .* sqg.ψ̂
+    sqg.û_x .= - 1im .* sqg.ky' .* sqg.ψ̂
+    sqg.û_y	.=  1im .* sqg.kx .* sqg.ψ̂
     
     sqg.u_x .= irfft(sqg.û_x, nx)
     sqg.u_y .= irfft(sqg.û_y, nx)
+
+end
+
+
+export update_advection_term!
+
+"""
+    update_advection_term(model)
+
+Compute the Fourier transform of the partial derivative
+of the advection term plus the hyperviscosity term
+
+"""
+function update_advection_term!(sqg)
+
+    nx = sqg.grid.nx
+
+    update_velocities!( sqg )
+
+    # Advection term
+
+    sqg.a .=  sqg.u_x .* irfft(-1im .* sqg.kx .* sqg.b̂, nx)
+    sqg.a .+= sqg.u_y .* irfft(-1im .* sqg.ky' .* sqg.b̂, nx)
+
+    sqg.â .= rfft(sqg.a)
+
+    # Summing Hyperviscosity term
+
+    sqg.â .-= sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
+
+end
+
+export TimeSolver
+
+struct TimeSolver
+
+    b̂ :: Array{ComplexF64, 2}
+    db̂ :: Array{ComplexF64, 2}
+
+    function TimeSolver( nx, ny)
+
+        b̂ = zeros(ComplexF64, nx÷2+1, ny)
+        db̂ = zeros(ComplexF64, nx÷2+1, ny)
+
+        new( b̂, db̂ )
+
+    end
+
+end
+
+export step!
+
+"""
+    step!(model, time_solver, dt)
+
+Time integration of the advection equation of b 
+by 4th order Runge-Kutta method
+"""
+function step!( sqg :: SQG, rk4 :: TimeSolver, dt )
+
+    rk4.b̂ .= sqg.b̂
+
+    update_advection_term!(sqg)
+
+    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt / 2
+    rk4.db̂ .= sqg.â ./ 2
+
+    update_advection_term!(sqg)
+
+    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt / 2
+    rk4.db̂ .+= sqg.â
+
+    update_advection_term!(sqg)
+
+    sqg.b̂ .= rk4.b̂ .+ sqg.â .* dt 
+    rk4.db̂ .+= sqg.â
+
+    update_advection_term!(sqg)
+
+    rk4.db̂ .+= sqg.â ./ 2
+
+    sqg.b̂ .= rk4.b̂ .+ dt / 3 .* rk4.db̂
 
 end
