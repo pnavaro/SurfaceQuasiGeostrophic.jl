@@ -21,8 +21,6 @@ mutable struct SQG
     hv_order :: Int
     hv_val :: Float64
 
-    b :: Array{Float64, 2}
-    ψ :: Array{Float64, 2}
     b̂ :: Array{ComplexF64, 2}
     ψ̂ :: Array{ComplexF64, 2}
 
@@ -33,9 +31,6 @@ mutable struct SQG
 
     a :: Array{Float64, 2}
     â :: Array{ComplexF64, 2}
-
-    kx :: Vector{Float64}
-    ky :: Vector{Float64}
 
     function SQG( grid, f0 )
 
@@ -48,8 +43,6 @@ mutable struct SQG
 
         nx, ny = grid.nx, grid.ny
 
-        b = zeros(nx, ny)
-        ψ = zeros(nx, ny)
         b̂ = zeros(ComplexF64, nx÷2+1, ny)
         ψ̂ = zeros(ComplexF64, nx÷2+1, ny)
 
@@ -61,14 +54,8 @@ mutable struct SQG
         a = zeros(Float64, nx, ny)
         â = zeros(ComplexF64, nx÷2+1, ny)
 
-        kx = 2π / grid.lx .* collect(0:nx÷2)
-        ky = 2π / grid.ly .* [0:ny÷2-1;-ny÷2:-1]
-
-        kx .*= (abs.(kx) .< nx/3)
-        ky .*= (abs.(ky) .< ny/3)
-
         new( grid, rho, g, buoyancy_freq_n, odg_b, hv_order, hv_val,
-             b, ψ, b̂, ψ̂, u_x, u_y, û_x, û_y, a, â, kx, ky)
+             b̂, ψ̂, u_x, u_y, û_x, û_y, a, â)
 
     end
 
@@ -87,11 +74,10 @@ buoyancy according to the Surface-Quasi-Geostrophic model.
 function update_velocities!( sqg :: SQG )
 
     nx, ny = sqg.grid.nx, sqg.grid.ny
-    sqg.b  = irfft(sqg.b̂, nx)
     sqg.ψ̂ .= sqg.b̂ .* sqg.grid.on_k ./ sqg.buoyancy_freq_n
     
-    sqg.û_x .= - 1im .* sqg.ky' .* sqg.ψ̂
-    sqg.û_y	.=  1im .* sqg.kx .* sqg.ψ̂
+    sqg.û_x .= - 1im .* sqg.grid.ky .* sqg.ψ̂
+    sqg.û_y	.=  1im .* sqg.grid.kx .* sqg.ψ̂
     
     sqg.u_x .= irfft(sqg.û_x, nx)
     sqg.u_y .= irfft(sqg.û_y, nx)
@@ -116,14 +102,14 @@ function update_advection_term!(sqg)
 
     # Advection term
 
-    sqg.a .=  sqg.u_x .* irfft(-1im .* sqg.kx .* sqg.b̂, nx)
-    sqg.a .+= sqg.u_y .* irfft(-1im .* sqg.ky' .* sqg.b̂, nx)
+    sqg.a .=  sqg.u_x .* irfft(-1im .* sqg.grid.kx .* sqg.b̂, nx)
+    sqg.a .+= sqg.u_y .* irfft(-1im .* sqg.grid.ky .* sqg.b̂, nx)
 
     sqg.â .= rfft(sqg.a)
 
     # Summing Hyperviscosity term
 
-    sqg.â .-= sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
+    # sqg.â .-= sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
 
 end
 

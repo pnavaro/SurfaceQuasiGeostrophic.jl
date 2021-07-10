@@ -34,6 +34,8 @@ struct Grid
     dy::Float64
     x::Vector{Float64}
     y::Vector{Float64}
+    kx::Array{Float64,2}
+    ky::Array{Float64,2}
     k::Array{Float64,2}
     on_k::Array{Float64,2}
 
@@ -71,7 +73,7 @@ struct Grid
         x = LinRange(0, lx, nx + 1)[1:end-1]
         y = LinRange(0, ly, ny + 1)[1:end-1]
 
-        new(nx, ny, lx, ly, dx, dy, x, y, k, on_k)
+        new(nx, ny, lx, ly, dx, dy, x, y, kx, ky, k, on_k)
 
     end
 
