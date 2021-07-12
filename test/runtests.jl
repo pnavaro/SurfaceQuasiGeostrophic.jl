@@ -57,7 +57,6 @@ savefig("advection_term.png")
 
 ## Choice of time step : CFL
 @show dt = compute_dt(sqg)
-dt = 300
 println("Time step: $dt seconds")
 
 nstep = advection_duration ÷ dt
