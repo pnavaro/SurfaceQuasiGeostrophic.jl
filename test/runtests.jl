@@ -1,19 +1,15 @@
 using SurfaceQuasiGeostrophic
 using Test
 using FFTW
-using Plots
 using ProgressMeter
 using TimerOutputs
 
 const to = TimerOutput()
 
-ENV["GKSwstype"] = "100"
-
-
 @testset "Advection" begin
 
 # Duration of the simulation [in seconds]
-advection_duration = 3600*24*20; # 20 days
+advection_duration = 3600*24; # 1 day
 
 # Resolution [even integer]
 nx, ny  = 128, 128
@@ -31,25 +27,9 @@ sqg = SQG( grid, f0 )
 # Initial condition for the buoyancy
 init_buoyancy!(sqg)
 
-contourf(grid.x, grid.y, irfft(sqg.b̂, nx), aspect_ratio = :equal)
-savefig("initial_buoyancy.png")
-
-@show sqg.buoyancy_freq_n
-
 ## Initialisation of the spatial fields
 
 update_velocities!( sqg)
-contourf(sqg.u_x)
-savefig("u_x.png")
-contourf(sqg.u_y)
-savefig("u_y.png")
-contourf(irfft(sqg.ψ̂, nx))
-savefig("stream_function.png")
-
-update_advection_term!( sqg )
-
-contourf(irfft(sqg.â, nx))
-savefig("advection_term.png")
 
 ## Hyperviscosity [order & coefficient]
 @show sqg.hv_order = 8
@@ -69,7 +49,6 @@ rk4 = TimeSolver(nx, ny)
 
 pbar = Progress(nstep)
 
-# anim = @animate for i = 1:nstep
 for i = 1:nstep
 
     rk4.b̂ .= sqg.b̂
@@ -95,24 +74,14 @@ for i = 1:nstep
 
     sqg.b̂ .= rk4.b̂ .+ dt / 3 .* rk4.db̂
 
-    # contourf!(grid.x, grid.y, irfft(sqg.b̂, nx), aspect_ratio=:equal, 
-    #           axis=([], false), colorbar=false, clims=(-sqg.odg_b,sqg.odg_b))
 
     next!(pbar)
 
 end 
 
-# end every 10
-
-# gif(anim, joinpath(@__DIR__, "buoyancy.gif"), fps = 10)
-
 show(to)
 
-contourf(grid.x, grid.y, irfft(sqg.b̂, nx), aspect_ratio = :equal)
-savefig("final_buoyancy.png")
-
 @test true
-
 
 end
 
