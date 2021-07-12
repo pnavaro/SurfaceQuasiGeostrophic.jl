@@ -25,13 +25,13 @@ function compute_hypercoef(model)
 
     s = (dxUx .+ dyUy) ./ 2
     d = (dyUx .+ dxUy) ./ 2
-    lambda = sqrt.(s .^ 2 + d .^ 2)
-    lambda_rms = sqrt(mean(lambda .^ 2))
+
+    @show lambda_rms = sqrt(mean(s .^ 2 .+ d .^ 2))
 
     dx, dy = model.grid.dx, model.grid.dy
 
     # Hyperviscosity coefficient
-    coef = 40 * sqrt(mean(lambda.^2)) * ((dx+dy)/2π)^model.hv_order
+    coef = 40 * lambda_rms * ((dx+dy)/2π)^model.hv_order
 
     return coef
 
