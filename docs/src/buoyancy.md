@@ -88,7 +88,7 @@ anim = @animate for i = 1:nstep
 
     sqg.b̂ .= rk4.b̂ .+ dt / 3 .* rk4.db̂
 
-    heatmap(irfft(sqg.b̂, nx), aspect_ratio=:equal, axis=([], false), 
+    contourf(irfft(sqg.b̂, nx), linewidth=0, aspect_ratio=:equal, axis=([], false), 
         colorbar=false, clims=(-sqg.odg_b,sqg.odg_b) )
 
 end every 50 
