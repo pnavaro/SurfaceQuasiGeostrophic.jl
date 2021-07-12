@@ -16,7 +16,7 @@ ENV["GKSwstype"] = "100"
 advection_duration = 3600*24*20; # 20 days
 
 # Resolution [even integer]
-nx, ny  = 64, 64
+nx, ny  = 128, 128
 lx, ly = 1e6, 1e6
 angle_grid = π/4 
 omega = 2π/(24*60*60)
@@ -59,7 +59,7 @@ savefig("advection_term.png")
 @show dt = compute_dt(sqg)
 println("Time step: $dt seconds")
 
-nstep = advection_duration ÷ dt
+nstep = floor(Int, advection_duration / dt)
 @show nstep
 
 # Printing some information
