@@ -17,7 +17,7 @@ function init_buoyancy!(model :: SQG)
     ## Spatial buoyancy field
 
     anticyclone(cx, cy) = (exp.(- ee .* (x .- cx).^2 ./ 2σ^2) 
-              .* transpose(exp.(- ee .* (y .- cy).^2 ./ 2σ^2)))
+              .* transpose(exp.(- (y .- cy).^2 ./ 2σ^2)))
 
     # Warm anticyclones
 
