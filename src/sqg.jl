@@ -109,7 +109,7 @@ function update_advection_term!(sqg)
 
     # Summing Hyperviscosity term
 
-    # sqg.â .-= sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
+    sqg.â .-= sqg.hv_val .* (sqg.grid.k.^sqg.hv_order) .* sqg.b̂
 
 end
 
