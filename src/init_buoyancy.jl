@@ -12,7 +12,7 @@ function init_buoyancy!(model :: SQG)
     lx, ly = model.grid.lx, model.grid.ly
     x, y = model.grid.x, model.grid.y
     ee = 4
-    σ = 2 * model.grid.lx / 15 # Length scale close to the Rossby radius
+    σ = model.grid.lx / 15 # Length scale close to the Rossby radius
 
     ## Spatial buoyancy field
 
