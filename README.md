@@ -4,4 +4,4 @@
 [![Build Status](https://github.com/pnavaro/SurfaceQuasiGeostrophic.jl/workflows/CI/badge.svg)](https://github.com/pnavaro/SurfaceQuasiGeostrophic.jl/actions)
 [![Coverage](https://codecov.io/gh/pnavaro/SurfaceQuasiGeostrophic.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/pnavaro/SurfaceQuasiGeostrophic.jl)
 
-PLEASE NOTE THIS SOFTWARE IS FOR TESTING PURPOSES ONLY AND IS SUBJECT TO BREAKING CHANGES.
+PLEASE NOTE THIS SOFTWARE IS FOR TESTING PURPOSES ONLY AND COULD BE SUBJECT TO BREAKING CHANGES.
