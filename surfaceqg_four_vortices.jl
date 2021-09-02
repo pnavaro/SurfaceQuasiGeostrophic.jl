@@ -1,123 +1,66 @@
 # -*- coding: utf-8 -*-
-# # Decaying Surface QG turbulence
-#
-# A simulation of decaying surface quasi-geostrophic turbulence.
-# We reproduce here the initial value problem for an elliptical 
-# vortex as done by Held et al. 1995, _J. Fluid Mech_.
-#
-# An example of decaying barotropic quasi-geostrophic turbulence over topography.
-#
-# ## Install dependencies
-#
-# First let's make sure we have all required packages installed.
-
-using Pkg
-pkg"add GeophysicalFlows, Plots, Printf, Random, Statistics"
-
-# ## Let's begin
-#
-# Let's load `GeophysicalFlows.jl` and some other needed packages.
-
 using GeophysicalFlows, Plots, Printf, Random
 
-using Statistics: mean
-using Random: seed!
+ dev = CPU() 
 
+n = 256
+stepper = "FilteredETDRK4"
+dt = 0.03
+tf =60
+nsteps = Int(tf / dt)
+nsubs = round(Int, nsteps/100)
 
-# ## Choosing a device: CPU or GPU
+L = 2π
+ν = 1e-19
+nν = 4
 
-dev = CPU()     # Device (CPU/GPU)
-
-
-# ## Numerical parameters and time-stepping parameters
-
-      n = 256                       # 2D resolution = n²
-stepper = "FilteredETDRK4"          # timestepper
-     dt = 0.03                      # timestep
-     tf = 60                        # length of time for simulation
- nsteps = Int(tf / dt)              # total number of time-steps
- nsubs  = round(Int, nsteps/100)    # number of time-steps for intermediate logging/plotting (nsteps must be multiple of nsubs)
-
-
-# ## Physical parameters
-
- L = 2π        # domain size
- ν = 1e-19     # hyper-viscosity coefficient
-nν = 4         # hyper-viscosity order
-
-
-# ## Problem setup
-# We initialize a `Problem` by providing a set of keyword arguments. In this
-# example numerical instability due to accumulation of buoyancy variance at high
-# wavenumbers is taken care with the `FilteredTimestepper` we picked.
 prob = SurfaceQG.Problem(dev; nx=n, Lx=L, dt=dt, 
-    stepper=stepper, ν=ν, nν=nν)
+    stepper=stepper, ν = ν , nν = nν )
 
-# Let's define some shortcuts.
 sol, clock, vars, params, grid = prob.sol, prob.clock, prob.vars, prob.params, prob.grid
 x, y = grid.x, grid.y
 
-
-# ## Setting initial conditions
-#
-# We initialize the buoyancy equation with an elliptical vortex.
 X, Y = gridpoints(grid)
-b₀ = @. exp(-(X^2 + 4*Y^2))
+b = @. exp(-((X+L/4)^2 + 4*(Y+L/4)^2))
+b .+= @. exp(-((X+L/4)^2 + 4*(Y-L/4)^2))
+b .-= @. exp(-((X-L/4)^2 + 4*(Y+L/4)^2))
+b .-= @. exp(-((X-L/4)^2 + 4*(Y-L/4)^2))
 
-SurfaceQG.set_b!(prob, b₀)
+SurfaceQG.set_b!(prob, b )
 
-# Let's plot the initial condition. Note that when plotting, we decorate the variable to be 
-# plotted with `Array()` to make sure it is brought back on the CPU when `vars` live on the GPU.
-heatmap(x, y, Array(vars.b'),
-     aspectratio = 1,
+heatmap(x, y, vars.b', aspectratio = 1,
                c = :deep,
-            clim = (0, 1),
+            clim = (-1, 1),
            xlims = (-grid.Lx/2, grid.Lx/2),
            ylims = (-grid.Ly/2, grid.Ly/2),
           xticks = -3:3,
           yticks = -3:3,
           xlabel = "x",
-          ylabel = "y",
-           title = "buoyancy bₛ",
+ylabel = "y",
+title = "buoyancy b ",
       framestyle = :box)
 
-
-# ## Diagnostics
-
-# Create Diagnostics; `buoyancy_variance`, `kinetic_energy` and `buoyancy_dissipation` 
-# functions were imported at the top.
 B  = Diagnostic(SurfaceQG.buoyancy_variance, prob; nsteps=nsteps)
 KE = Diagnostic(SurfaceQG.kinetic_energy, prob; nsteps=nsteps)
 Dᵇ = Diagnostic(SurfaceQG.buoyancy_dissipation, prob; nsteps=nsteps)
 diags = [B, KE, Dᵇ] # A list of Diagnostics types passed to `stepforward!`. Diagnostics are updated every timestep.
 
+# +
+base_filename = string("four_vortices_", n)
 
-# ## Output
-
-# We choose folder for outputing `.jld2` files and snapshots (`.png` files).
-# Define base filename so saved data can be distinguished from other runs
-base_filename = string("SurfaceQG_decaying_n_", n)
-# We choose folder for outputing `.jld2` files and snapshots (`.png` files).
 datapath = "./"
 plotpath = "./"
 
-dataname = joinpath(datapath, base_filename)
+dataname = joinpath(datapath, base_filename) 
 plotname = joinpath(plotpath, base_filename)
 
-# Do some basic file management,
-if !isdir(plotpath); mkdir(plotpath); end
+if !isdir(plotpath); mkdir(plotpath); end 
 if !isdir(datapath); mkdir(datapath); end
+# -
 
-# and then create Output.
-get_sol(prob) = sol # extracts the Fourier-transformed solution
-get_u(prob) = irfft(im * grid.l .* sqrt.(grid.invKrsq) .* sol, grid.nx)
+get_sol(prob) = sol 
+get_u(prob) = irfft(im * grid.l .* sqrt.(grid.invKrsq) .* sol, grid.nx) 
 out = Output(prob, dataname, (:sol, get_sol), (:u, get_u))
-
-
-# ## Visualizing the simulation
-
-# We define a function that plots the buoyancy field and the time evolution of kinetic energy 
-# and buoyancy variance.
 
 function plot_output(prob)
   b = prob.vars.b
@@ -125,7 +68,7 @@ function plot_output(prob)
   pb = heatmap(x, y, Array(b'),
        aspectratio = 1,
                  c = :deep,
-              clim = (0, 1),
+              clim = (-1, 1),
              xlims = (-grid.Lx/2, grid.Lx/2),
              ylims = (-grid.Ly/2, grid.Ly/2),
             xticks = -3:3,
@@ -159,10 +102,6 @@ function plot_output(prob)
 
   return p
 end
-nothing # hide
-
-
-# ## Time-stepping the `Problem` forward and create animation by updating the plot.
 
 startwalltime = time()
 
@@ -183,7 +122,7 @@ anim = @animate for j = 0:round(Int, nsteps/nsubs)
     println(log2)
   end
 
-  p[1][1][:z] = Array(vars.b)
+  p[1][1][:z] = vars.b
   p[1][:title] = "buoyancy, t=" * @sprintf("%.2f", clock.t)
   push!(p[2][1], KE.t[KE.i], KE.data[KE.i])
   push!(p[3][1], B.t[B.i], B.data[B.i])
@@ -192,9 +131,7 @@ anim = @animate for j = 0:round(Int, nsteps/nsubs)
   SurfaceQG.updatevars!(prob)
 end
 
-mp4(anim, "sqg_ellipticalvortex.mp4", fps=14)
-
-# Let's see how all flow fields look like at the end of the simulation.
+mp4(anim, "four_vortices.mp4", fps=14)
 
 pu = heatmap(x, y, Array(vars.u'),
      aspectratio = 1,
@@ -225,7 +162,7 @@ pv = heatmap(x, y, Array(vars.v'),
 pb = heatmap(x, y, Array(vars.b'),
      aspectratio = 1,
                c = :deep,
-            clim = (0, 1),
+            clim = (-1, 1),
            xlims = (-L/2, L/2),
            ylims = (-L/2, L/2),
           xticks = -3:3,

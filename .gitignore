@@ -5,3 +5,7 @@ docs/build/
 SurfaceQG_decaying_n_256.jld2
 SurfaceQG_decaying_n_256_1.jld2
 sqg_ellipticalvortex.mp4
+.ipynb_checkpoints/four_vortices-checkpoint.ipynb
+.ipynb_checkpoints/surfaceqg_decaying-checkpoint.jl
+.ipynb_checkpoints/surfaceqg_four_vortices-checkpoint.ipynb
+four_vortices.mp4
