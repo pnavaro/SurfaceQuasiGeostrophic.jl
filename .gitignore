@@ -1,3 +1,7 @@
 Manifest.toml
 *.swp
 docs/build/
+.ipynb_checkpoints/surfaceqg_decaying-checkpoint.ipynb
+SurfaceQG_decaying_n_256.jld2
+SurfaceQG_decaying_n_256_1.jld2
+sqg_ellipticalvortex.mp4
